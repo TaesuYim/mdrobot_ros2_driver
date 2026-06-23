@@ -1,0 +1,23 @@
+# controller_manager config for a single-channel MDROBOT controller (MD400).
+#
+# joint_state_broadcaster verifies the read() path; velocity_cont
+# (forward_command_controller) verifies the write() path by forwarding
+# /velocity_cont/commands (std_msgs/Float64MultiArray) to motor1/velocity.
+# velocity_cont needs ros2_controllers:  sudo apt install ros-jazzy-ros2-controllers
+#
+# Command units follow counts_per_rev: SI (rad/s) when set, else raw rpm.
+controller_manager:
+  ros__parameters:
+    update_rate: 20  # Hz — single read+write is ~2 serial round-trips.
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    velocity_cont:
+      type: forward_command_controller/ForwardCommandController
+
+velocity_cont:
+  ros__parameters:
+    joints:
+      - motor1
+    interface_name: velocity

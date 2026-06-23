@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!-- Single-channel MDROBOT controller (e.g. MD400) as a ros2_control system. -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mdrobot_single">
+
+  <xacro:arg name="port" default="/dev/ttyUSB1"/>
+  <xacro:arg name="baudrate" default="19200"/>
+  <xacro:arg name="motor_id" default="1"/>
+  <!-- USE_LIMIT_SW: -1 leave as-is, 0 disable (often needed for serial drive), 1 enable. -->
+  <xacro:arg name="use_limit_sw" default="-1"/>
+  <xacro:arg name="auto_enable" default="true"/>
+  <!-- Hall feedback on MD400 ~ 24 counts/rev (3 x pole, 8-pole). Measure per motor. -->
+  <xacro:arg name="counts_per_rev" default="24.0"/>
+
+  <link name="base_link"/>
+  <link name="motor1_link"/>
+  <joint name="motor1" type="continuous">
+    <parent link="base_link"/>
+    <child link="motor1_link"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <ros2_control name="mdrobot_single" type="system">
+    <hardware>
+      <plugin>mdrobot_ros2_control/MdrobotSystemHardware</plugin>
+      <param name="device_type">single</param>
+      <param name="port">$(arg port)</param>
+      <param name="baudrate">$(arg baudrate)</param>
+      <param name="motor_id">$(arg motor_id)</param>
+      <param name="use_limit_sw">$(arg use_limit_sw)</param>
+      <param name="auto_enable">$(arg auto_enable)</param>
+      <param name="position_max_rpm">100</param>
+    </hardware>
+    <joint name="motor1">
+      <command_interface name="velocity"/>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <param name="counts_per_rev">$(arg counts_per_rev)</param>
+    </joint>
+  </ros2_control>
+</robot>

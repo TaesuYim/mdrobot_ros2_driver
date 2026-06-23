@@ -9,6 +9,9 @@ controllers with this driver — via either ROS 2 or the plain Python library.
 - **[Python library usage](python.md)** — installing the library, connecting,
   reading state, driving single- and dual-channel controllers, position control,
   the high-level API reference, and low-level register access.
+- **[ros2_control (C++)](ros2_control.md)** — the `mdrobot_cpp` C++ library and the
+  `mdrobot_ros2_control` `SystemInterface` plugin: URDF parameters, state/command
+  interfaces, units, controllers, and a diff-drive bringup.
 
 > Both single-channel (one motor) and dual-channel (two motors) controllers are
 > supported. The driver is generic — it exposes per-motor commands and state and

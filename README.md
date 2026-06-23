@@ -2,29 +2,33 @@
 
 ROS 2 driver and Python library for **MDROBOT MD-series BLDC/DC motor controllers**, controlled over **RS485 / Modbus RTU**.
 
-The project is split into two packages:
+The project is a colcon workspace of complementary packages — use only what you need:
 
 | Package | What it is |
 |---|---|
 | [`mdrobot`](src/mdrobot) | Pure-Python communication library — framing, CRC, Modbus RTU protocol, registers, status, unit conversion — with **single-channel** and **dual-channel** motor driver classes. Usable on its own (plain Python / `pip`). |
-| [`mdrobot_ros2_driver`](src/mdrobot_ros2_driver) | A generic **ROS 2 node** that wraps the library and exposes per-motor velocity/position commands and motor state. |
+| [`mdrobot_ros2_driver`](src/mdrobot_ros2_driver) | A generic **ROS 2 node** (Python) that wraps the library and exposes per-motor velocity/position commands and motor state. |
+| [`mdrobot_cpp`](src/mdrobot_cpp) | **C++ communication library** — the same layers as `mdrobot` (POSIX `termios` transport, CRC, Modbus RTU, registers, status, units, single/dual drivers). `ament_cmake`. |
+| [`mdrobot_ros2_control`](src/mdrobot_ros2_control) | A C++ [`ros2_control`](https://control.ros.org) **`SystemInterface` plugin** wrapping `mdrobot_cpp`. One plugin for both shapes via `device_type` (single → 1 joint, dual → 2 joints); exports position/velocity/effort state and velocity/position command interfaces. |
 
 - **Single-channel** controllers (one motor) → `SingleMotorDriver`
 - **Dual-channel** controllers (two motors) → `DualMotorDriver`
 
 This is a *generic* motor driver: it does **not** include robot kinematics (differential drive, odometry, …). It exposes per-motor commands and state only; kinematics belong in a higher-level robot package that consumes this driver.
 
-> **C++ is planned.** This release ships the Python library and the Python ROS 2 node. The layout (a `src/` colcon workspace with per-package naming) is set up so C++ packages (e.g. `mdrobot_cpp`) can be added later without restructuring.
+> **Python and C++.** The Python library/node and the C++ library/`ros2_control` plugin live side by side in one colcon workspace. Build only what you need with `colcon build --packages-select <pkg>`.
 
 ## Repository layout
 
 ```text
-mdrobot_motor_driver/        # this repo == a colcon workspace
+mdrobot_motor_driver/            # this repo == a colcon workspace
 └── src/
-    ├── mdrobot/             # Python communication library (ament_python)
-    └── mdrobot_ros2_driver/ # ROS 2 node (ament_python), depends on mdrobot
-docs/manual/                 # detailed user manual
-examples/                    # minimal standalone examples
+    ├── mdrobot/                 # Python communication library (ament_python)
+    ├── mdrobot_ros2_driver/     # Python ROS 2 node (ament_python), depends on mdrobot
+    ├── mdrobot_cpp/             # C++ communication library (ament_cmake)
+    └── mdrobot_ros2_control/    # C++ ros2_control SystemInterface (ament_cmake), depends on mdrobot_cpp
+docs/manual/                     # detailed user manual
+examples/                        # minimal standalone examples
 ```
 
 ## Requirements
@@ -89,12 +93,33 @@ with DualMotorDriver.open("/dev/ttyUSB0") as d:
 
 Low-level register/command access is always available via `d.client` for anything the high-level API doesn't cover.
 
+### ros2_control (C++)
+
+```bash
+colcon build --packages-select mdrobot_cpp mdrobot_ros2_control
+source install/setup.bash
+
+# single (MD400) — joint_state_broadcaster + a velocity forward command controller
+ros2 launch mdrobot_ros2_control bringup.launch.py \
+    device_type:=single port:=/dev/ttyUSB0 counts_per_rev:=24
+
+# dual (PNT50/MD400T) laid out as a diff-drive base
+ros2 launch mdrobot_ros2_control bringup.launch.py \
+    device_type:=dual port:=/dev/ttyUSB0 counts_per_rev:=12
+```
+
+The hardware plugin (`mdrobot_ros2_control/MdrobotSystemHardware`) is declared in the
+robot's URDF `<ros2_control>` block; set `device_type`, `port`, per-joint `counts_per_rev`
+(positive → SI rad/rad·s state & commands, otherwise raw count/rpm), and the gating options
+there. See the manual for the full parameter list and a diff-drive example.
+
 ## Documentation
 
 Full usage, parameters, safety and troubleshooting are in the manual:
 
 - **[ROS 2 usage](docs/manual/ros2.md)** — build, launch, parameters, topics/services, `joint_states` units, shutdown, troubleshooting
 - **[Python library usage](docs/manual/python.md)** — connect, read, drive, position control, API reference, raw access
+- **[ros2_control (C++)](docs/manual/ros2_control.md)** — `mdrobot_cpp` library + the `SystemInterface` plugin, URDF parameters, controllers, diff-drive example
 
 Minimal runnable examples are in [`examples/`](examples/).
 

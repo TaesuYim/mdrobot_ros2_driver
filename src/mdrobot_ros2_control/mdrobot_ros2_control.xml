@@ -1,0 +1,10 @@
+<library path="mdrobot_ros2_control">
+  <class name="mdrobot_ros2_control/MdrobotSystemHardware"
+         type="mdrobot_ros2_control::MdrobotSystemHardware"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ros2_control SystemInterface for MDROBOT MD-series motor controllers
+      (RS485 / Modbus RTU). device_type=single -> 1 joint, dual -> 2 joints.
+    </description>
+  </class>
+</library>
