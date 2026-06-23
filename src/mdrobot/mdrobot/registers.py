@@ -49,9 +49,10 @@ PID_COM_TAR_SPEED = 180    # C/R target speed used by PID_START_STOP, rpm.
                            #    verified on hardware: COM_TAR_SPEED + START_STOP(1/2) drives the motor.
 
 # --- acceleration / deceleration: slow-start / slow-down ----------------------------
-# Per protocol docs; NOT yet hardware-verified. A raw value 0-1023 maps to
-# 0..PID_MAX_SS_TIME seconds (default full scale 15 s). Use the helpers in units.py
-# (slow_seconds_to_raw / slow_raw_to_seconds) for the conversion.
+# Speed slow (153/154 single, 108/109/111/112 dual) hardware-verified 2026-06-22
+# (Phase 12). A raw value 0-1023 maps to 0..PID_MAX_SS_TIME seconds (full scale 15 s
+# on tested devices). Position slow (178/179, 113-116) still protocol-doc-based. Use the
+# helpers in units.py (slow_seconds_to_raw / slow_raw_to_seconds) for the conversion.
 PID_MAX_SS_TIME = 57       # R/W max slow-start time, 15-60 s (full scale for slow values)
 PID_MIN_SSSD = 124         # R/W min slow-start/down parameter, 0-1023
 PID_SLOW_START = 153       # R/W speed slow-start (single/global), 0-1023

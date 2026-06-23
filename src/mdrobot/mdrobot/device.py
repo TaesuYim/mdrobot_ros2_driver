@@ -120,9 +120,11 @@ class _DriverBase:
         self.client.command(reg.CMD_ALARM_RESET)
 
     # --- acceleration / deceleration: slow-start / slow-down ---------------------------
-    # NOTE: per protocol docs, NOT yet hardware-verified. A raw value 0-1023 maps to
-    # 0..PID_MAX_SS_TIME seconds (default full scale 15 s). Subclasses expose the
-    # per-channel / single setters and getters; clearing is shared (global CMDs).
+    # SPEED slow-start/down hardware-verified 2026-06-22 (Phase 12, MD400 + PNT50):
+    # a raw value 0-1023 maps to 0..PID_MAX_SS_TIME seconds (full scale 15 s on tested
+    # devices). POSITION slow and the CMD_*_OFF clears are still protocol-doc-based
+    # (not separately hardware-verified). Subclasses expose the per-channel / single
+    # setters and getters; clearing is shared (global CMDs).
     def _set_slow(self, pid: int, seconds: float, full_scale_s: float) -> None:
         self.client.write_register(pid, slow_seconds_to_raw(seconds, full_scale_s))
 
@@ -220,12 +222,13 @@ class SingleMotorDriver(_DriverBase):
             time.sleep(poll)
         return False
 
-    # --- slow-start / slow-down (acceleration/deceleration ramp); NOT hardware-verified -
+    # --- slow-start / slow-down (acceleration/deceleration ramp) -----------------------
+    # Speed slow hardware-verified (Phase 12); position slow still doc-based.
     def set_slow_start(self, seconds: float, *, full_scale_s: float = SLOW_DEFAULT_FULL_SCALE_S) -> None:
         """Set the speed slow-start (acceleration ramp) time in seconds (`PID_SLOW_START`).
 
-        Per protocol docs, NOT yet hardware-verified. Full scale (default 15 s) is set
-        by PID_MAX_SS_TIME on the controller.
+        Hardware-verified (Phase 12). Full scale (default 15 s) is set by
+        PID_MAX_SS_TIME on the controller.
         """
         self._set_slow(reg.PID_SLOW_START, seconds, full_scale_s)
 
@@ -234,7 +237,7 @@ class SingleMotorDriver(_DriverBase):
         return self._get_slow(reg.PID_SLOW_START, full_scale_s)
 
     def set_slow_down(self, seconds: float, *, full_scale_s: float = SLOW_DEFAULT_FULL_SCALE_S) -> None:
-        """Set the speed slow-down (deceleration ramp) time in seconds (`PID_SLOW_DOWN`). NOT hardware-verified."""
+        """Set the speed slow-down (deceleration ramp) time in seconds (`PID_SLOW_DOWN`). Hardware-verified (Phase 12)."""
         self._set_slow(reg.PID_SLOW_DOWN, seconds, full_scale_s)
 
     def get_slow_down(self, *, full_scale_s: float = SLOW_DEFAULT_FULL_SCALE_S) -> float:
@@ -390,9 +393,10 @@ class DualMotorDriver(_DriverBase):
             reg.PID_PNT_INC_POSI_VEL_CMD, delta1, speed1, delta2, speed1 if speed2 is None else speed2
         )
 
-    # --- slow-start / slow-down per channel; NOT hardware-verified ----------------------
+    # --- slow-start / slow-down per channel --------------------------------------------
+    # Speed slow hardware-verified (Phase 12, PNT50: PID 108/109/111/112); position slow doc-based.
     def set_slow_start(self, channel: int, seconds: float, *, full_scale_s: float = SLOW_DEFAULT_FULL_SCALE_S) -> None:
-        """Set MOT{channel} speed slow-start (acceleration ramp) time in seconds. NOT hardware-verified."""
+        """Set MOT{channel} speed slow-start (acceleration ramp) time in seconds. Hardware-verified (Phase 12)."""
         self._set_slow(self._ch_pid(self._CH_SLOW_START, channel), seconds, full_scale_s)
 
     def get_slow_start(self, channel: int, *, full_scale_s: float = SLOW_DEFAULT_FULL_SCALE_S) -> float:
@@ -400,7 +404,7 @@ class DualMotorDriver(_DriverBase):
         return self._get_slow(self._ch_pid(self._CH_SLOW_START, channel), full_scale_s)
 
     def set_slow_down(self, channel: int, seconds: float, *, full_scale_s: float = SLOW_DEFAULT_FULL_SCALE_S) -> None:
-        """Set MOT{channel} speed slow-down (deceleration ramp) time in seconds. NOT hardware-verified."""
+        """Set MOT{channel} speed slow-down (deceleration ramp) time in seconds. Hardware-verified (Phase 12)."""
         self._set_slow(self._ch_pid(self._CH_SLOW_DOWN, channel), seconds, full_scale_s)
 
     def get_slow_down(self, channel: int, *, full_scale_s: float = SLOW_DEFAULT_FULL_SCALE_S) -> float:
